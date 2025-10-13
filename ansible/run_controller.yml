@@ -25,6 +25,14 @@
       run_once: true
       delegate_to: node21-2.grid.orbit-lab.org
 
+    - name: Kill stray controller_client.py
+      shell: |
+        pids=$(ps aux | grep '[c]ontroller_client.py' | awk '{print $2}')
+        [ -n "$pids" ] && kill $pids || true
+      ignore_errors: yes
+      delegate_to: "{{ primary_client }}"
+      run_once: true
+      
     - name: Launch controller on primary client
       shell: "/root/pytorch/bin/python3 -u /l2h/CIFAR10L2H/controller_client.py"
       args:
@@ -71,4 +79,5 @@
         dest: ./Client_vs_Latency_Histogram.png
         flat: yes
       ignore_errors: yes
+
 
