@@ -1,0 +1,74 @@
+# run_controller.yml — run controller on the first client; fetch logs & outputs
+- name: Run controller script on primary client
+  hosts: client_nodes
+  become: yes
+  gather_facts: no
+  tasks:
+    - name: Determine primary client (first host)
+      set_fact:
+        primary_client: "{{ groups['client_nodes'][0] }}"
+      run_once: true
+
+    - name: Ensure expert Go proxy is up (7000)
+      wait_for:
+        host: node21-2.grid.orbit-lab.org
+        port: 7000
+        state: started
+        timeout: 90
+      run_once: true
+
+    - name: Ensure expert Python server is up (6000) on expert node
+      wait_for:
+        port: 6000
+        state: started
+        timeout: 90
+      run_once: true
+      delegate_to: node21-2.grid.orbit-lab.org
+
+    - name: Launch controller on primary client
+      shell: "/root/pytorch/bin/python3 -u /l2h/CIFAR10L2H/controller_client.py"
+      args:
+        chdir: /l2h/CIFAR10L2H
+      async: 14400
+      poll: 10
+      run_once: true
+      delegate_to: "{{ primary_client }}"
+      register: controller_job
+
+    - name: Show controller job summary
+      debug:
+        var: controller_job
+      run_once: true
+      delegate_to: "{{ primary_client }}"
+
+- name: Fetch artifacts from primary client
+  hosts: "{{ groups['client_nodes'][0] }}"
+  become: yes
+  gather_facts: no
+  tasks:
+    - name: Wait for controller log to appear
+      wait_for:
+        path: /l2h/CIFAR10L2H/controller_output.log
+        state: present
+        timeout: 1200
+
+    - name: Fetch controller output log
+      fetch:
+        src: /l2h/CIFAR10L2H/controller_output.log
+        dest: ./controller_output.log
+        flat: yes
+
+    - name: Fetch latency pickle (if present)
+      fetch:
+        src: /l2h/CIFAR10L2H/list_pickle.pkl
+        dest: ./list_pickle.pkl
+        flat: yes
+      ignore_errors: yes
+
+    - name: Fetch histogram (if present)
+      fetch:
+        src: /l2h/CIFAR10L2H/Client_vs_Latency_Histogram.png
+        dest: ./Client_vs_Latency_Histogram.png
+        flat: yes
+      ignore_errors: yes
+

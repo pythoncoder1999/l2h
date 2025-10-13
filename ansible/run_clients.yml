@@ -1,0 +1,31 @@
+- name: Prepare all COSMOS client nodes
+  hosts: client_nodes
+  become: yes
+  tasks:
+    - name: Is /l2h a Git repo?
+      stat: { path: /l2h/.git }
+      register: l2h_git
+
+    - name: Reset /l2h if not a Git repo
+      file: { path: /l2h, state: absent }
+      when: not l2h_git.stat.exists
+
+    - name: Kill stray clientV3.py
+      shell: |
+        pids=$(ps aux | grep '[r]un_client.py' | awk '{print $2}'); [ -n "$pids" ] && kill $pids || true
+      ignore_errors: yes
+
+    - name: Clone/force checkout code
+      git:
+        repo: https://gitlab.orbit-lab.org/r3-25/l2h
+        dest: /l2h
+        version: l2h_fin
+        clone: yes
+        update: yes
+        force: yes
+
+    # NEW: torchvision + pillow are required for CIFAR-10
+    - name: Ensure matplotlib, scikit-learn, torchvision, pillow in venv
+      shell: |
+        bash -lc 'source /root/pytorch/bin/activate && pip install -q matplotlib scikit-learn torchvision pillow'
+
