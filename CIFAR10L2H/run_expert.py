@@ -47,6 +47,11 @@ expert = Expert().to(DEVICE)
 expert.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE))
 expert.eval()
 
+with torch.inference_mode():
+    warm = torch.zeros(1, 3, 32, 32, device=DEVICE)
+    _ = expert(warm)
+print("[Expert] Warm-up done", flush=True)
+
 client_last_seen = {}
 request_count    = 0
 start_time       = time.time()
