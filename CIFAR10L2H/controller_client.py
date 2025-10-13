@@ -49,7 +49,7 @@ EXPERT_PORT = 7000  # keep 7000
 
 def stream_output(node, process):
     try:
-evaluate(client_model, testloader)        for line in process.stdout:
+        for line in process.stdout:
             print(f"[{node}] {line.strip()}")
     except Exception as e:
         print(f"[{node}] ❗ stream error: {e}")
@@ -257,4 +257,5 @@ for n in range(1, NUM_TESTS_TOTAL + 1):
 
     time.sleep(WAIT_BETWEEN_RUNS)
     '''
+
 
