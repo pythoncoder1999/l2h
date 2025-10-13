@@ -26,7 +26,7 @@ parser.add_argument('--port', type=int, default=7000)  # Go proxy
 parser.add_argument('--start_at', type=int, default=None)  # epoch seconds barrier
 parser.add_argument('--conn_timeout', type=float, default=30.0)
 parser.add_argument('--retries', type=int, default=3)
-parser.add_argument('--thresholds', type=str, default='0.3225')  # comma-separated
+parser.add_argument('--thresholds', type=str, default='0.3')  # comma-separated
 parser.add_argument('--barrier_host', type=str, default=None)
 parser.add_argument('--barrier_port', type=int, default=None)
 args = parser.parse_args()
@@ -222,7 +222,7 @@ if __name__ == "__main__":
     norm = T.Normalize((0.4914, 0.4822, 0.4465),
                        (0.2023, 0.1994, 0.2010))
 
-    thresholds = [0.3225]#[float(x) for x in args.thresholds.split(',')] if args.thresholds else [0.0]
+    thresholds = [0.3]#[float(x) for x in args.thresholds.split(',')] if args.thresholds else [0.0]
     iterations = 5
     client_cps = 0.0
 
