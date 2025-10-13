@@ -17,7 +17,7 @@ print("cwd:", BASE_DIR)
 ALL_CLIENTS = [
     "node1-1.grid.orbit-lab.org",
     "node1-2.grid.orbit-lab.org",
-    "node1-4.grid.orbit-lab.org",
+    "node1-20.grid.orbit-lab.org",
     "node14-8.grid.orbit-lab.org", 
     #"node1-8.grid.orbit-lab.org",
     "node1-10.grid.orbit-lab.org",
@@ -26,7 +26,7 @@ ALL_CLIENTS = [
     "node2-3.grid.orbit-lab.org",
     "node2-4.grid.orbit-lab.org",
     "node2-6.grid.orbit-lab.org",
-    "node2-7.grid.orbit-lab.org",
+    "node2-20.grid.orbit-lab.org",
     "node2-8.grid.orbit-lab.org",
     "node2-12.grid.orbit-lab.org",
     "node2-13.grid.orbit-lab.org",
@@ -257,3 +257,4 @@ for n in range(1, NUM_TESTS_TOTAL + 1):
 
     time.sleep(WAIT_BETWEEN_RUNS)
     '''
+
