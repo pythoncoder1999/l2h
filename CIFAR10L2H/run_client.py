@@ -1,3 +1,4 @@
+'''
 # clientV3.py (client-side normalization; expert RTT includes serialization; latencies exclude rejector & normalization)
 import json
 import os, sys, io, socket, struct, time, argparse, pickle
@@ -481,12 +482,12 @@ if __name__ == "__main__":
 
             plt.close('all')
 
-
-
-
-
-
 '''
+
+
+
+
+
 # clientV3.py (client-side normalization; expert RTT includes serialization; latencies exclude rejector & normalization)
 import json
 import os, sys, io, socket, struct, time, argparse, pickle
@@ -966,4 +967,3 @@ if __name__ == "__main__":
 
             plt.close('all')
 
-'''
