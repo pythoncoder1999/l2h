@@ -36,7 +36,7 @@ print("[clientV3] cwd:", os.getcwd())
 print("[clientV3] args:", vars(args))
 
 # ── Files / device ──────────────────────────────────────────────────────────
-REJECTOR_PATH = 'RejectorModels/rejector_70_3l.pt'
+REJECTOR_PATH = 'RejectorModels3L/rejector_70_3l.pt'
 CLIENT_MODEL_PATH = 'ClientModels/client_model70.pt'
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print("[clientV3] device:", device)
