@@ -34,7 +34,7 @@ ALL_CLIENTS = [
     "node2-15.grid.orbit-lab.org",
     "node2-16.grid.orbit-lab.org",
     "node2-17.grid.orbit-lab.org",
-    "node2-18.grid.orbit-lab.org",
+    "node13-1.grid.orbit-lab.org",
 ]
 
 MAX_RETRIES = 3
@@ -199,3 +199,4 @@ for n in range(1, NUM_TESTS_TOTAL + 1):
                 time.sleep(WAIT_BETWEEN_RETRIES)
 
     time.sleep(WAIT_BETWEEN_RUNS)
+
