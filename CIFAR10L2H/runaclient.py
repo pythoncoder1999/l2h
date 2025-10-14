@@ -585,7 +585,8 @@ def run_once():
                     client_correct += (pred == label)
                     total += 1
                     correct += (pred == label)
-
+                else:
+                    raise Exception("Bad Move")
         # Per-threshold stats
         acc = correct / total if total else 0.0
         client_acc = (client_correct / client_total) if client_total else 0.0
