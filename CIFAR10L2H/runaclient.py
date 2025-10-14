@@ -568,7 +568,7 @@ def run_once():
                     total += 1
                     correct += (pred == label)
 
-                elif prob1 > max(0.5+threshold,prob2) or ((prob2 <= 0.5+threshold and prob1 <= 0.5+threshold)):
+                elif prob1 > max(0.5+threshold,prob2) or ((prob2 <= 0.5+threshold) and (prob1 <= 0.5+threshold)):
                     # Client path
                     img_norm_gpu = norm(img_gpu)
                     t_client_start = time.perf_counter()
