@@ -1,4 +1,24 @@
 #2 logits
+'''python client_single_2log.py \
+  --host node21-2.grid.orbit-lab.org \
+  --port 7000 \
+  --thresholds 0.3225 \
+  --iterations 5 \
+  --save_dir out_2log \
+  --client_model ClientModels/client_model70.pt \
+  --rejector_model RejectorModels/rejector_70.pt
+
+
+python client_single_3log.py \
+  --host node21-2.grid.orbit-lab.org \
+  --port 7000 \
+  --thresholds 0.3225 \
+  --iterations 5 \
+  --save_dir out_3log \
+  --client_model ClientModels/client_model70.pt \
+  --rejector_model RejectorModels/rejector_70_3l.pt
+
+'''
 
 import json
 import os, io, socket, struct, time, argparse, pickle
@@ -188,6 +208,11 @@ def run_once():
     }
 
     for threshold in thresholds:
+        # ----- per-threshold tracking (2-logit script) -----
+        # --- track rejector logits (2-logit) ---
+        rej_logit0_list = []   # raw rejector logit for class 0
+        rej_logit1_list = []   # raw rejector logit for class 1
+
         client_correct = client_total = 0
         expert_correct = expert_total = 0
         correct = total = 0
@@ -206,6 +231,9 @@ def run_once():
                 with torch.inference_mode():
                     r_logits = rejector(img_gpu.view(1, -1))
                     prob = torch.softmax(r_logits, dim=1)[0, 1]
+                    # collect raw rejector logits
+                    rej_logit0_list.append(float(r_logits[0, 0].item()))
+                    rej_logit1_list.append(float(r_logits[0, 1].item()))
                 t_rej_end = time.perf_counter()
                 rej_time = max(0.0, min(0.02, t_rej_end - t_rej_start))
                 stats["rej_time"].append(rej_time)
@@ -281,6 +309,50 @@ def run_once():
         stats["overall_latency"].append(overall_avg)
 
         print(f"[client_single] Acc: {acc*100:.2f}% | Avg server RTT: {avg_lat:.4f}s | Overall avg: {overall_avg:.4f}s", flush=True)
+        # ----- Save per-threshold summary (counts, latency, accuracy) -----
+        summary_json = {
+            "threshold": float(threshold),
+            "expert_calls": int(server_calls),
+            "client_calls": int(client_calls),
+            "avg_expert_RTT": float(stats["rtt"][-1]) if stats["rtt"] else 0.0,
+            "avg_expert_compute": float(stats["expert_t"][-1]) if stats["expert_t"] else 0.0,
+            "avg_client_time": float(stats["client_t"][-1]) if stats["client_t"] else 0.0,
+            "avg_overall_latency": float(overall_avg),
+            "accuracy": float(acc),
+            "client_acc": float(client_acc),
+            "expert_acc": float(expert_acc),
+            "rej_logit0_mean": float(np.mean(rej_logit0_list)) if rej_logit0_list else None,
+            "rej_logit1_mean": float(np.mean(rej_logit1_list)) if rej_logit1_list else None,
+        }
+        with open(os.path.join(args.save_dir, f"summary_{threshold:.3f}.json"), "w") as f:
+            json.dump(summary_json, f, indent=2)
+
+        # ----- Plot rejector raw logit distributions (2-logit) -----
+        try:
+            xlbl = f"{threshold:.3f}"
+
+            if rej_logit0_list:
+                plt.figure(figsize=(7,4))
+                plt.hist(rej_logit0_list, bins=40)
+                plt.xlabel("Rejector raw logit: class 0")
+                plt.ylabel("Count")
+                plt.title(f"Rejector logit[0] distribution @ {xlbl}")
+                plt.tight_layout()
+                plt.savefig(os.path.join(args.save_dir, f"rejector_logit0_{xlbl}.png"))
+                plt.close()
+
+            if rej_logit1_list:
+                plt.figure(figsize=(7,4))
+                plt.hist(rej_logit1_list, bins=40)
+                plt.xlabel("Rejector raw logit: class 1")
+                plt.ylabel("Count")
+                plt.title(f"Rejector logit[1] distribution @ {xlbl}")
+                plt.tight_layout()
+                plt.savefig(os.path.join(args.save_dir, f"rejector_logit1_{xlbl}.png"))
+                plt.close()
+        except Exception as e:
+            print(f"[client_single] WARNING: rejector logit plot failed: {e}", flush=True)
+
 
     # Save stats
     out_json = os.path.join(args.save_dir, "single_stats.json")
@@ -514,6 +586,10 @@ def run_once():
     }
 
     for threshold in thresholds:
+        # --- Track rejector logits (3-logit) ---
+        rej_logit0_list = []
+        rej_logit1_list = []
+        rej_logit2_list = []
         client_correct = client_total = 0
         expert_correct = expert_total = 0
         correct = total = 0
@@ -535,6 +611,9 @@ def run_once():
                     prob1 = probs[0,0]
                     prob2 = probs[0,1]
                     prob3 = probs[0,2]
+                    rej_logit0_list.append(float(r_logits[0, 0].item()))
+                    rej_logit1_list.append(float(r_logits[0, 1].item()))
+                    rej_logit2_list.append(float(r_logits[0, 2].item()))
                 t_rej_end = time.perf_counter()
                 rej_time = max(0.0, min(0.02, t_rej_end - t_rej_start))
                 stats["rej_time"].append(rej_time)
@@ -611,6 +690,65 @@ def run_once():
         stats["overall_latency"].append(overall_avg)
 
         print(f"[client_single] Acc: {acc*100:.2f}% | Avg server RTT: {avg_lat:.4f}s | Overall avg: {overall_avg:.4f}s", flush=True)
+
+
+        # ----- Save per-threshold summary (counts, latency, accuracy) -----
+        summary_json = {
+            "threshold": float(threshold),
+            "expert_calls": int(server_calls),
+            "client_calls": int(client_calls),
+            "avg_expert_RTT": float(stats["rtt"][-1]) if stats["rtt"] else 0.0,
+            "avg_expert_compute": float(stats["expert_t"][-1]) if stats["expert_t"] else 0.0,
+            "avg_client_time": float(stats["client_t"][-1]) if stats["client_t"] else 0.0,
+            "avg_overall_latency": float(overall_avg),
+            "accuracy": float(acc),
+            "client_acc": float(client_acc),
+            "expert_acc": float(expert_acc),
+            "rej_logit0_mean": float(np.mean(rej_logit0_list)) if rej_logit0_list else None,
+            "rej_logit1_mean": float(np.mean(rej_logit1_list)) if rej_logit1_list else None,
+            "rej_logit2_mean": float(np.mean(rej_logit2_list)) if rej_logit2_list else None,
+        }
+        with open(os.path.join(args.save_dir, f"summary_{threshold:.3f}.json"), "w") as f:
+            json.dump(summary_json, f, indent=2)
+
+        # ----- Plot rejector raw logit distributions (3-logit) -----
+        try:
+            xlbl = f"{threshold:.3f}"
+
+            if rej_logit0_list:
+                plt.figure(figsize=(7,4))
+                plt.hist(rej_logit0_list, bins=40)
+                plt.xlabel("Rejector raw logit: class 0")
+                plt.ylabel("Count")
+                plt.title(f"Rejector logit[0] distribution @ {xlbl}")
+                plt.tight_layout()
+                plt.savefig(os.path.join(args.save_dir, f"rejector_logit0_{xlbl}.png"))
+                plt.close()
+
+            if rej_logit1_list:
+                plt.figure(figsize=(7,4))
+                plt.hist(rej_logit1_list, bins=40)
+                plt.xlabel("Rejector raw logit: class 1")
+                plt.ylabel("Count")
+                plt.title(f"Rejector logit[1] distribution @ {xlbl}")
+                plt.tight_layout()
+                plt.savefig(os.path.join(args.save_dir, f"rejector_logit1_{xlbl}.png"))
+                plt.close()
+
+            if rej_logit2_list:
+                plt.figure(figsize=(7,4))
+                plt.hist(rej_logit2_list, bins=40)
+                plt.xlabel("Rejector raw logit: class 2")
+                plt.ylabel("Count")
+                plt.title(f"Rejector logit[2] distribution @ {xlbl}")
+                plt.tight_layout()
+                plt.savefig(os.path.join(args.save_dir, f"rejector_logit2_{xlbl}.png"))
+                plt.close()
+        except Exception as e:
+            print(f"[client_single] WARNING: rejector logit plot failed: {e}", flush=True)
+
+
+
 
     # Save stats
     out_json = os.path.join(args.save_dir, "single_stats.json")
